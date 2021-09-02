@@ -16,6 +16,9 @@ def empty_user():
 #   ]
 # }
 def denial_aggregator(json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -40,6 +43,9 @@ def denial_aggregator(json_response):
 #   ]
 # }
 def intrusion_aggregator(ip_address_map, json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -64,6 +70,9 @@ def intrusion_aggregator(ip_address_map, json_response):
 #   ]
 # }
 def executable_aggregator(ip_address_map, json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -88,6 +97,9 @@ def executable_aggregator(ip_address_map, json_response):
 #   ]
 # }
 def misuse_aggregator(json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -110,6 +122,9 @@ def misuse_aggregator(json_response):
 #   ]
 # }
 def unauthorized_aggregator(json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -133,6 +148,9 @@ def unauthorized_aggregator(json_response):
 #   ]
 # }
 def probing_aggregator(ip_address_map, json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:
@@ -158,6 +176,9 @@ def probing_aggregator(ip_address_map, json_response):
 #   ]
 # }
 def other_aggregator(json_response):
+    if json_response.get("results") is None:
+        return {}
+
     response = {}
 
     for incident in json_response["results"]:

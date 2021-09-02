@@ -3,11 +3,17 @@ import asyncio
 import aiohttp
 import os
 import services
+import traceback
+
 
 app = FastAPI()
 
 USERNAME = os.environ["ELEVATE_USERNAME"]
 PASSWORD = os.environ["ELEVATE_PASSWORD"]
+
+# defaults upstream api requests to 10 seconds
+TIMEOUT = float(os.environ.get("ELEVATE_TIMEOUT", "") or 10)
+
 
 if USERNAME == "":
     raise Exception("environment variable ELEVATE_USERNAME was not specified")
@@ -54,10 +60,13 @@ SERVICES = [
 
 async def async_requester(session, service_def):
     try:
-        async with session.get(url=service_def["url"]) as response:
+        async with session.get(
+            url=service_def["url"], timeout=TIMEOUT, raise_for_status=True
+        ) as response:
             resp = await response.json()
             return (service_def["name"], resp)
     except Exception as e:
+        traceback.print_exc()
         return (service_def["name"], {})
 
 

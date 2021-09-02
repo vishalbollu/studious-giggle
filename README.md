@@ -71,17 +71,43 @@ Here is how I tested with Bash:
 echo "https://incident-api.use1stag.elevatesecurity.io/incidents/denial/
 https://incident-api.use1stag.elevatesecurity.io/incidents/intrusion/
 https://incident-api.use1stag.elevatesecurity.io/incidents/executable/
-https://incident-api.use1stag.elevatesecurity.io/incidents/misuse/" > urls.txt
+https://incident-api.use1stag.elevatesecurity.io/incidents/misuse/
+https://incident-api.use1stag.elevatesecurity.io/incidents/unauthorized/
+https://incident-api.use1stag.elevatesecurity.io/incidents/probing/
+https://incident-api.use1stag.elevatesecurity.io/incidents/other/" > urls.txt
 
-time xargs -n1 -P 4 curl -u <USERNAME>:<PASSWORD> < urls.txt
-> real	0m3.311s
-> user	0m0.073s
-> sys	0m0.048s
+time xargs -n1 -P 7 curl -u $ELEVATE_USERNAME:$ELEVATE_PASSWORD < urls.txt
+> real	0m4.143s
 ```
 
 The 2 second requirement is one that I failed to achieve largely because the parallel/concurrent requests to the endpoints took longer than 2 seconds. At this point, I am assuming that there is a bottleneck in the upstream APIs which causing this delay.
 
 Please let me know if my assumption is incorrect.
+
+### After feedback from Jose
+
+Jose mentioned that part of the test was to interact with upstream in a disciplined way to handle errors and timeouts, which makes sense.
+
+After receiving the feedback, I tried adding timeouts:
+
+```bash
+echo "https://incident-api.use1stag.elevatesecurity.io/incidents/denial/
+https://incident-api.use1stag.elevatesecurity.io/incidents/intrusion/
+https://incident-api.use1stag.elevatesecurity.io/incidents/executable/
+https://incident-api.use1stag.elevatesecurity.io/incidents/misuse/
+https://incident-api.use1stag.elevatesecurity.io/incidents/unauthorized/
+https://incident-api.use1stag.elevatesecurity.io/incidents/probing/
+https://incident-api.use1stag.elevatesecurity.io/incidents/other/" > urls.txt
+
+xargs -n1 -P 7 curl --max-time 2 -u $ELEVATE_USERNAME:$ELEVATE_PASSWORD < urls.txt
+> real	0m2.023s
+
+# encountered connection timed out errors without any successful responses
+```
+
+I profiled the APIs early on the challenge, each request takes about 1.5 to 1.6 seconds from Toronto (excluding the identities request). In theory, making all of these requests in parallel should result take the same amount of time as the longest request so I was expecting all of the requests to return within 1.6 seconds (approximately).
+
+However, it seems that the more concurrent requests I make to the endpoints, the longer each individual request takes. Perhaps the upstream APIs are blocking on a shared resource? I believe this is the crux of this problem. Adding timeouts is a moot point because all of the requests will fail. Based on my interactions with the APIs it doesn't seem to be possible to scrape all of the APIs within 2 second timeframe. Perhaps a different strategy is to setup a connection pool of 2 (or 3) to only allow 2 concurrent requests and return the aggregated results.
 
 ## Production readiness checklist
 
