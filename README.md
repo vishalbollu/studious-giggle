@@ -92,13 +92,15 @@ Already done:
 - Wrote some basic unit tests
 
 TODO:
-- Handle failed http requests to endpoints
+- Add timeouts to requests made to upstream APIs
+- Handle failed http requests to endpoints (return error if any requests fail, or try best-effort and communicate which upstream requests failed)
 - Handle missing ip addresses
 - Update the server to use structured logging (e.g. JSON) for easier analysis after exporting logs to a logging solution
 - Make endpoints configurable
 - If upstream endpoints are versioned, use specific versions
 - Use a more standard library like pandas for grouping and joins
 - Improve readiness/liveness probes to use support non-http request probes in situations where the server is encountering a high volume
+- Add request tracing to make it easier to make it easier to perform RCA
 - Add monitoring to observe the incoming requests to the server and metadata for each upstream API being
 - Refactor code (use enums, add docstring, type hints, etc)
 - Add .dockerignore to not include test files in main container
