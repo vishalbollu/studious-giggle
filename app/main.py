@@ -1,10 +1,6 @@
-import sys
-
 from fastapi import FastAPI
 import asyncio
 import aiohttp
-import json
-import time
 import os
 import services
 
@@ -58,16 +54,10 @@ SERVICES = [
 
 async def async_requester(session, service_def):
     try:
-        print(service_def)
-        print(service_def["url"])
-        start = time.time()
         async with session.get(url=service_def["url"]) as response:
-            print(response.status)
             resp = await response.json()
-            print(f"{service_def['name']} {time.time()-start}")
             return (service_def["name"], resp)
     except Exception as e:
-        print("Unable to get url {} due to {}.".format(service_def["url"], e.__class__))
         return (service_def["name"], {})
 
 

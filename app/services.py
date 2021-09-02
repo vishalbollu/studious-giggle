@@ -5,10 +5,21 @@ def empty_user():
     return {priority: {"count": 0, "incidents": []} for priority in PRIORITY}
 
 
+# {
+#   "results": [
+#     {
+#       "priority": low
+#       "reported_by": 1234,
+#       "timestamp": 1629939474.1346128,
+#       "source_ip": "17.105.244.255"
+#     }
+#   ]
+# }
 def denial_aggregator(json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "denial"
         employee_id = incident["reported_by"]
         user = response.get(employee_id, empty_user())
         user[incident["priority"]]["incidents"].append(incident)
@@ -19,21 +30,20 @@ def denial_aggregator(json_response):
 
 
 # {
-#     "results": [
-#         {
-#             "priority": [low, medium, high, critical]
-#             "internal_ip":
-#             "timestamp": <unix epoch>,
-#             "source_ip":
-#         }
-#     ]
+#   "results": [
+#     {
+#       "priority": low,
+#       "internal_ip": "17.105.244.255",
+#       "timestamp": 1629939474.1346128,
+#       "source_ip": "17.105.244.255"
+#     }
+#   ]
 # }
-
-
 def intrusion_aggregator(ip_address_map, json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "intrusion"
         employee_id = ip_address_map.get(incident["internal_ip"])
         if employee_id is None:
             continue
@@ -45,20 +55,19 @@ def intrusion_aggregator(ip_address_map, json_response):
 
 
 # {
-#     "results": [
-#         {
-#         "priority": "high",
-#         "machine_ip": "17.105.244.255",
-#         "timestamp": 1629939474.1346128
-#         }
-#     ]
+#   "results": [
+#     {
+#       "priority": "high",
+#       "machine_ip": "17.105.244.255",
+#       "timestamp": 1629939474.1346128
+#     }
+#   ]
 # }
-
-
 def executable_aggregator(ip_address_map, json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "executable"
         employee_id = ip_address_map.get(incident["machine_ip"])
         if employee_id is None:
             continue
@@ -76,14 +85,13 @@ def executable_aggregator(ip_address_map, json_response):
 #       "employee_id": 447770,
 #       "timestamp": 1629932993.2436273
 #     },
-#     ]
+#   ]
 # }
-
-
 def misuse_aggregator(json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "misuse"
         employee_id = incident["employee_id"]
         user = response.get(employee_id, empty_user())
         user[incident["priority"]]["incidents"].append(incident)
@@ -99,13 +107,13 @@ def misuse_aggregator(json_response):
 #       "employee_id": 656611,
 #       "timestamp": 1629930924.6406548
 #     },
+#   ]
 # }
-
-
 def unauthorized_aggregator(json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "unauthorized"
         employee_id = incident["employee_id"]
         user = response.get(employee_id, empty_user())
         user[incident["priority"]]["incidents"].append(incident)
@@ -122,13 +130,13 @@ def unauthorized_aggregator(json_response):
 #       "ip": "17.229.47.234",
 #       "timestamp": 1629933416.6438653
 #     }
+#   ]
 # }
-
-
 def probing_aggregator(ip_address_map, json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "probing"
         employee_id = ip_address_map.get(incident["ip"])
         if employee_id is None:
             continue
@@ -147,13 +155,13 @@ def probing_aggregator(ip_address_map, json_response):
 #       "identifier": 243617,
 #       "timestamp": 1629932888.644877
 #     }
+#   ]
 # }
-
-
 def other_aggregator(json_response):
     response = {}
 
     for incident in json_response["results"]:
+        incident["type"] = "other"
         employee_id = incident["identifier"]
         user = response.get(employee_id, empty_user())
         user[incident["priority"]]["incidents"].append(incident)
