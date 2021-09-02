@@ -1,62 +1,59 @@
 import sys
 
 from fastapi import FastAPI
-
-version = f"{sys.version_info.major}.{sys.version_info.minor}"
-
-app = FastAPI()
-
 import asyncio
 import aiohttp
 import json
 import time
 import os
+import services
+
+app = FastAPI()
 
 USERNAME = os.environ["ELEVATE_USERNAME"]
 PASSWORD = os.environ["ELEVATE_PASSWORD"]
 
-services = {
-    "denial": {
+if USERNAME == "":
+    raise Exception("environment variable ELEVATE_USERNAME was not specified")
+
+if PASSWORD == "":
+    raise Exception("environment variable ELEVATE_PASSWORD was not specified")
+
+
+SERVICES = [
+    {
         "name": "denial",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/denial/",
-        "normalizer": {},
     },
-    "intrusion": {
+    {
         "name": "intrusion",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/intrusion/",
-        "normalizer": {},
     },
-    "executable": {
+    {
         "name": "executable",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/executable/",
-        "normalizer": {},
     },
-    "misuse": {
+    {
         "name": "misuse",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/misuse/",
-        "normalizer": {},
     },
-    "unauthorized": {
+    {
         "name": "unauthorized",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/unauthorized/",
-        "normalizer": {},
     },
-    "probing": {
+    {
         "name": "probing",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/probing/",
-        "normalizer": {},
     },
-    "other": {
+    {
         "name": "other",
         "url": "https://incident-api.use1stag.elevatesecurity.io/incidents/other/",
-        "normalizer": {},
     },
-    "identities": {
+    {
         "name": "identities",
-        "url": "https://incident-api.use1stag.elevatesecurity.io/identities",
-        "normalizer": {},
+        "url": "https://incident-api.use1stag.elevatesecurity.io/identities/",
     },
-}
+]
 
 
 async def async_requester(session, service_def):
@@ -74,26 +71,39 @@ async def async_requester(session, service_def):
         return (service_def["name"], {})
 
 
-async def parallel_requests(urls):
+async def parallel_requests(services):
     async with aiohttp.ClientSession(
         auth=aiohttp.BasicAuth(USERNAME, password=PASSWORD)
     ) as session:
         ret = await asyncio.gather(
-            *[async_requester(session, service_def) for _, service_def in services.items()]
+            *[async_requester(session, service_def) for service_def in services]
         )
     return ret
 
 
 @app.get("/incidents")
 async def incidents():
-    parallel_results = await parallel_requests(services)
-    with open("/workspace/results.json", "w") as out_file:
-        json.dump(parallel_results, out_file)
+    parallel_results = await parallel_requests(SERVICES)
+
     merged_results = {name: results for name, results in parallel_results}
-    with open("/workspace/merged.json", "w") as out_file:
-        json.dump(merged_results, out_file)
-    message = f"Hello world! From FastAPI running on Uvicorn with Gunicorn. Using Python {version}"
-    return {"message": message}
+
+    ip_address_map = merged_results["identities"]
+    incidents = [
+        services.denial_aggregator(merged_results["denial"]),
+        services.intrusion_aggregator(ip_address_map, merged_results["intrusion"]),
+        services.executable_aggregator(ip_address_map, merged_results["executable"]),
+        services.misuse_aggregator(merged_results["misuse"]),
+        services.unauthorized_aggregator(merged_results["unauthorized"]),
+        services.probing_aggregator(ip_address_map, merged_results["probing"]),
+        services.other_aggregator(merged_results["other"]),
+    ]
+
+    merged_incidents = incidents[0]
+
+    for incident_list in incidents[1:]:
+        merged_incidents = services.in_place_merge_incidents(merged_incidents, incident_list)
+
+    return merged_incidents
 
 
 @app.get("/healthz")
